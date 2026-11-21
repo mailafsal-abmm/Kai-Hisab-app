@@ -1,0 +1,39 @@
+name: Build Kai Hisab APK
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Unzip project
+        run: |
+          mkdir proj
+          for z in *.zip; do unzip -oq "$z" -d proj; done
+          d=$(dirname "$(find proj -name settings.gradle | head -1)")
+          echo "PROJ=$d" >> $GITHUB_ENV
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: android-actions/setup-android@v3
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+
+      - name: Build debug APK
+        working-directory: ${{ env.PROJ }}
+        run: gradle assembleDebug --stacktrace
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: KaiHisab-debug-apk
+          path: ${{ env.PROJ }}/app/build/outputs/apk/debug/app-debug.apk
